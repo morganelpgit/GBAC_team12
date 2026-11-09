@@ -8,7 +8,8 @@ Usage, in this order:
     python download_etfs.py tickers  -> find each ETF's Yahoo symbol from its ISIN + exchange
                                         and save it to data/tickers.csv (check it by hand)
     python download_etfs.py full     -> download the full price history (start of the project)
-    python download_etfs.py update   -> append only the missing days (before each trading day)
+    (python download_etfs.py update   -> append only the missing days (before each trading day))
+    python download_etfs.py check
 """
 
 import sys
@@ -183,7 +184,7 @@ def download(start: str) -> pd.DataFrame:
     raw = yf.download(
         tickers["yahoo"].tolist(),
         start=start,
-        auto_adjust=True,   # prices adjusted for dividends and splits
+        auto_adjust=False,   # prices adjusted for dividends and splits AND RAW closing
         group_by="ticker",
         progress=False,
         threads=True,
@@ -194,22 +195,23 @@ def download(start: str) -> pd.DataFrame:
         if t["yahoo"] not in raw.columns.get_level_values(0):
             print(f"WARNING: no data for {t['code']} ({t['yahoo']})")
             continue
-        df = raw[t["yahoo"]][["Close", "Volume"]].dropna(subset=["Close"]).copy()
+        df = raw[t["yahoo"]][["Close", "Adj Close", "Volume"]].dropna(subset=["Close"]).copy()
         if df.empty:
             print(f"WARNING: no data for {t['code']} ({t['yahoo']})")
             continue
-        df = df.reset_index().rename(columns={"Date": "date", "Close": "price", "Volume": "volume"})
+        df = df.reset_index().rename(columns={"Date": "date", "Close": "close", "Adj Close": "adj_close",
+                                              "Volume": "volume"})
         for col in ["isin", "code", "theme", "yahoo"]:
             df[col] = t[col]
         rows.append(df)
 
     data = pd.concat(rows, ignore_index=True)
-    return data[["date", "code", "isin", "yahoo", "theme", "price", "volume"]]
-
+    return data[["date", "code", "isin", "yahoo", "theme", "close", "adj_close", "volume"]]
 
 def add_returns(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(["code", "date"])
-    data["return"] = data.groupby("code")["price"].pct_change()
+    # Returns use the ADJUSTED close, so dividends count as performance (no fake drop on payout days)
+    data["return"] = data.groupby("code")["adj_close"].pct_change(fill_method=None)
     return data
 
 
@@ -231,7 +233,50 @@ def update():
     data.to_csv(PRICES_FILE, index=False)
     print(f"Done: data up to date until {data['date'].max().date()}")
 
+# ---------------------------------------------------------------------------
+# 4. DATA QUALITY CHECK
+# ---------------------------------------------------------------------------
+def check():
+    """Quick report per ETF: start date, gaps vs the Xetra calendar, zero-volume days, extreme moves."""
+    if not PRICES_FILE.exists():
+        sys.exit("No price file yet: run 'python download_etfs.py full' first")
+    df = pd.read_csv(PRICES_FILE, parse_dates=["date"])
+    closes = df.pivot(index="date", columns="code", values="close")
+    # Reference calendar = all weekdays (bank holidays will show up as 1-day gaps, which is normal)
+    calendar = pd.bdate_range(closes.index.min(), closes.index.max())
+    closes = closes.reindex(calendar)
+
+    report = []
+    for code in closes.columns:
+        s = closes[code]
+        first, last = s.first_valid_index(), s.last_valid_index()
+        live = s.loc[first:last]                       # ignore the period before launch
+        missing = live.isna()
+        longest_gap = (missing.groupby((~missing).cumsum()).sum().max()) if missing.any() else 0
+        sub = df[df["code"] == code]
+        report.append({
+            "code": code,
+            "first_date": first.date(),
+            "last_date": last.date(),
+            "days": int(live.notna().sum()),
+            "missing_days": int(missing.sum()),
+            "longest_gap": int(longest_gap),
+            "zero_volume_days": int((sub["volume"] == 0).sum()),
+            "moves_over_20pct": int((sub["return"].abs() > 0.20).sum()),
+        })
+    report = pd.DataFrame(report).sort_values("first_date")
+    pd.set_option("display.width", 200)
+    print(report.to_string(index=False))
+
+    print("\nTo look at:")
+    print(" - recent ETFs (short history):", ", ".join(report.loc[report["first_date"] > calendar[0].date() + pd.Timedelta(days=30), "code"]) or "none")
+    print(" - gaps longer than 5 days:", ", ".join(report.loc[report["longest_gap"] > 5, "code"]) or "none")
+    print(" - moves over 20% in a day (check if real):", ", ".join(report.loc[report["moves_over_20pct"] > 0, "code"]) or "none")
+    print("If data is missing: check the issuer's website or boerse-frankfurt.de")
+    report.to_csv(DATA_DIR / "data_check.csv", index=False)
+    print(f"Report saved to {DATA_DIR / 'data_check.csv'}")
+
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "full"
-    {"tickers": find_tickers, "full": full, "update": update}.get(mode, full)()
+    {"tickers": find_tickers, "full": full, "update": update, "check": check}.get(mode, full)()

@@ -1,0 +1,3 @@
+code,first_date,last_date,days,missing_days,longest_gap,zero_volume_days,moves_over_20pct
+S&P 500,2021-01-04,2026-11-09,1491,35,3,3,0
+WORLD,2021-01-04,2026-11-09,1491,35,3,3,0
