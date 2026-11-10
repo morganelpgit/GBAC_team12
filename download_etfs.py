@@ -90,7 +90,7 @@ ETFS = {
     "LU0322251520": ("S&P 500 SHORT", "Xtrackers S&P 500 Inverse Daily Swap UCITS ETF 1C", "Leveraged & inverse", "Xetra"),
     "FR0010468983": ("EURO STOXX 2X", "Amundi EURO STOXX 50 Daily (2x) Leveraged UCITS ETF Acc", "Leveraged & inverse", "Xetra"),
 }
-ETFS = dict(list(ETFS.items())[:2])  # TEST: keep only the first 2 ETFs -- comment out this line for the full run
+#ETFS = dict(list(ETFS.items())[:2])  # TEST: keep only the first 2 ETFs
 
 YAHOO_SUFFIX = {"Xetra": ".DE", "Brussels": ".BR", "Milan": ".MI"}
 FIGI_EXCHANGE = {"Xetra": "GY", "Brussels": "BB", "Milan": "IM"}  # OpenFIGI (Bloomberg) exchange codes
@@ -271,8 +271,7 @@ def check():
     print("\nTo look at:")
     print(" - recent ETFs (short history):", ", ".join(report.loc[report["first_date"] > calendar[0].date() + pd.Timedelta(days=30), "code"]) or "none")
     print(" - gaps longer than 5 days:", ", ".join(report.loc[report["longest_gap"] > 5, "code"]) or "none")
-    print(" - moves over 20% in a day (check if real):", ", ".join(report.loc[report["moves_over_20pct"] > 0, "code"]) or "none")
-    print("If data is missing: check the issuer's website or boerse-frankfurt.de")
+    #print(" - moves over 20% in a day (check if real):", ", ".join(report.loc[report["moves_over_20pct"] > 0, "code"]) or "none")
     report.to_csv(DATA_DIR / "data_check.csv", index=False)
     print(f"Report saved to {DATA_DIR / 'data_check.csv'}")
 

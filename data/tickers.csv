@@ -1,3 +1,51 @@
 isin,code,name,theme,exchange,yahoo
 IE00B4L5Y983,WORLD,iShares Core MSCI World UCITS ETF USD (Acc),Global equity (benchmark),Xetra,EUNL.DE
 IE00B5BMR087,S&P 500,iShares Core S&P 500 UCITS ETF USD (Acc),US equity,Xetra,SXR8.DE
+LU0908500753,EUROPE 600,Amundi Core Stoxx Europe 600 UCITS ETF Acc,European equity,Xetra,LYP6.DE
+IE00B53L3W79,EURO STOXX 50,iShares Core EURO STOXX 50 UCITS ETF EUR (Acc),European equity,Xetra,SXRT.DE
+FR0010655746,IBEX 35,Amundi IBEX 35 UCITS ETF Acc,European equity,Xetra,AMES.DE
+FR0000021842,BEL 20,Amundi BEL 20 UCITS ETF Dist,Home market,Brussels,BEL.BR
+IE00BF4RFH31,WORLD SMALL CAP,iShares MSCI World Small Cap UCITS ETF USD (Acc),Size & style factors,Xetra,IUSN.DE
+IE00B8FHGS14,WORLD MIN VOL,iShares Edge MSCI World Minimum Volatility UCITS ETF USD (Acc),Size & style factors,Xetra,IQQ0.DE
+NL0011683594,DIVIDEND LEADERS,VanEck Morningstar Developed Markets Dividend Leaders UCITS ETF,Size & style factors,Xetra,VDIV.DE
+IE000U9J8HX9,NASDAQ INCOME,NASDAQ Equity Premium Income Active UCITS ETF USD (Dist),Income strategies,Xetra,JEQP.DE
+IE00B53SZB19,NASDAQ,iShares NASDAQ 100 UCITS ETF USD (Acc),Equity / Tech,Xetra,SXRV.DE
+IE000I8KRLL9,SEMIS,iShares MSCI Global Semiconductors UCITS ETF USD (Acc),Equity / Tech,Xetra,SEC0.DE
+IE00BYPLS672,CYBERSEC,L&G Cyber Security UCITS ETF USD Acc,Equity / Tech,Xetra,USPY.DE
+IE00BQ70R696,BIOTECH,Invesco NASDAQ Biotech UCITS ETF,Equity / Tech,Xetra,NBTK.DE
+IE00BYZK4552,ROBOTICS,iShares Automation & Robotics UCITS ETF USD (Acc),Equity / Tech,Xetra,2B76.DE
+IE000YU9K6K2,SPACE,VanEck Space Innovators UCITS ETF A USD (Acc),Frontier tech,Xetra,JEDI.DE
+IE0007Y8Y157,QUANTUM,VanEck Quantum Computing UCITS ETF A USD (Acc),Frontier tech,Xetra,QUTM.DE
+LU1829219390,EURO BANKS,Amundi Euro Stoxx Banks UCITS ETF Acc,Financials,Xetra,LYBK.DE
+IE00BM67HK77,HEALTH CARE,Xtrackers MSCI World Health Care UCITS ETF 1C,Health care,Xetra,XDWH.DE
+IE00BKM4GZ66,EMMKT,iShares Core MSCI Emerging Markets IMI UCITS ETF USD (Acc),Emerging markets,Xetra,IS3N.DE
+IE00B02KXK85,CHINA LC,iShares China Large Cap UCITS ETF (Dist),Emerging markets,Xetra,IQQC.DE
+IE00BZCQB185,INDIA,iShares MSCI India UCITS ETF USD (Acc),Emerging markets,Xetra,QDV5.DE
+LU1900066975,KOREA,Amundi MSCI Korea UCITS ETF Acc,Emerging markets,Xetra,LKOR.DE
+IE00B0M63516,BRAZIL,iShares MSCI Brazil UCITS ETF USD (Dist),Emerging markets,Xetra,IQQB.DE
+IE00BQT3WG13,CHINA A,iShares MSCI China A UCITS ETF USD (Acc),Emerging markets,Xetra,36BZ.DE
+IE00BM67HM91,WORLD ENERGY,Xtrackers MSCI World Energy UCITS ETF 1C,Energy & commodities,Xetra,XDW0.DE
+IE00B6R51Z18,OIL & GAS E&P,iShares Oil & Gas Exploration & Production UCITS ETF USD (Acc),Energy & commodities,Xetra,IS0D.DE
+IE000M7V94E1,URANIUM,VanEck Uranium and Nuclear Technologies UCITS ETF A,Energy transition,Xetra,NUKL.DE
+IE00BK5BCH80,CLEAN ENERGY,L&G Clean Energy UCITS ETF USD (Acc),Energy transition,Xetra,RENW.DE
+FR0010930644,HYDROGEN,Amundi Global Hydrogen UCITS ETF EUR (Acc),Energy transition,Xetra,AMEE.DE
+IE0003Z9E2Y3,COPPER MINERS,Global X Copper Miners UCITS ETF USD (Acc),Industrial & strategic metals,Xetra,4COP.DE
+IE0002PG6CA6,RARE EARTHS,VanEck Rare Earth and Strategic Metals UCITS ETF USD (Acc),Industrial & strategic metals,Xetra,VVMX.DE
+IE00B4ND3602,GOLD,iShares Physical Gold ETC,Precious metals,Xetra,PPFB.DE
+IE00BQQP9F84,GOLD MINERS,VanEck Gold Miners UCITS ETF,Precious metals,Xetra,G2X.DE
+IE000UL6CLP7,SILVER MINERS,Global X Silver Miners UCITS ETF USD (Acc),Precious metals,Xetra,SLVR.DE
+LU1109942653,HIGHY BOND,Xtrackers II EUR High Yield Corporate Bond UCITS ETF 1D,Fixed income / Bonds,Xetra,XHYG.DE
+LU1407890620,US TREASURY 20Y,Amundi US Treasury Bond Long Dated UCITS ETF (Dist),Fixed income / Bonds,Xetra,DJAD.DE
+IE00BG47KH54,GLOBAL AGG BOND,Vanguard Global Aggregate Bond UCITS ETF EUR Hedged (Acc),Fixed income / Bonds,Xetra,VAGF.DE
+IE00B4WXJJ64,EUR GOVT BOND,iShares Core EUR Govt Bond UCITS ETF EUR (Dist),Fixed income / Bonds,Xetra,EUNH.DE
+LU1190417599,OVERNIGHT CASH,Amundi Smart Overnight Return UCITS ETF EUR (Acc),Money market (cash),Xetra,LYOR.DE
+IE000YYE6WK5,DEFENSE,VanEck Defense UCITS ETF A,Defensive sector,Xetra,DFEN.DE
+IE00BM67HN09,STAPLES,Xtrackers MSCI World Consumer Staples UCITS ETF 1C,Defensive sector,Xetra,XDWS.DE
+XS2940466316,BITCOIN,iShares Bitcoin ETP,Digital assets,Xetra,IB1T.DE
+IE00BMDKNW35,CRYPTO EQUITY,VanEck Crypto and Blockchain Innovators UCITS ETF USD (Acc),Digital assets,Xetra,DAVV.DE
+FR0010424143,STOXX SHORT,Amundi EURO STOXX 50 Daily (-2x) Inverse UCITS ETF Acc,Leveraged & inverse,Xetra,LSK8.DE
+IE00B8JVMZ80,COPPER LVG,WisdomTree Copper 3x Daily Leveraged,Leveraged & inverse,Milan,3HCL.MI
+IE00B94QLN63,PALLADIUM LVG,WisdomTree Palladium 2x Daily Leveraged,Leveraged & inverse,Milan,2PAL.MI
+IE00BLRPRL42,NASDAQ 3X,WisdomTree NASDAQ 100 3x Daily Leveraged,Leveraged & inverse,Milan,QQQ3.MI
+LU0322251520,S&P 500 SHORT,Xtrackers S&P 500 Inverse Daily Swap UCITS ETF 1C,Leveraged & inverse,Xetra,DXS3.DE
+FR0010468983,EURO STOXX 2X,Amundi EURO STOXX 50 Daily (2x) Leveraged UCITS ETF Acc,Leveraged & inverse,Xetra,LYMZ.DE
