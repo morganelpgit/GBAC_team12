@@ -1,0 +1,1 @@
+Anyone in the team can run python download_etfs.py update from the terminal without opening the notebook or using an LLM. That’s useful before each trading day, or for a teammate who only needs the prices.
