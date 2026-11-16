@@ -1,0 +1,31 @@
+code,date,issue,detail
+BITCOIN,2025-03-24,late_start,starts later than the other ETFs
+COPPER LVG,2022-11-04,extreme_move,+21.2% in one day (leverage +3x: may be genuine)
+COPPER LVG,2025-04-04,extreme_move,-22.4% in one day (leverage +3x: may be genuine)
+COPPER LVG,2025-07-09,extreme_move,+24.5% in one day (leverage +3x: may be genuine)
+COPPER LVG,2025-07-31,extreme_move,-64.5% in one day (leverage +3x: may be genuine)
+COPPER MINERS,2021-11-24,late_start,starts later than the other ETFs
+CRYPTO EQUITY,2021-05-06,late_start,starts later than the other ETFs
+DEFENSE,2023-03-31,late_start,starts later than the other ETFs
+EUROPE 600,2024-02-19,late_start,starts later than the other ETFs
+GOLD,2021-07-16,late_start,starts later than the other ETFs
+IBEX 35,2024-04-16,late_start,starts later than the other ETFs
+NASDAQ INCOME,2024-11-04,late_start,starts later than the other ETFs
+OVERNIGHT CASH,2025-03-17,late_start,starts later than the other ETFs
+PALLADIUM LVG,2022-02-25,extreme_move,-21.7% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2022-03-14,extreme_move,-28.8% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2022-04-25,extreme_move,-24.1% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2022-07-22,extreme_move,+22.1% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2023-12-14,extreme_move,+24.6% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2024-03-06,extreme_move,+24.5% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2025-12-29,extreme_move,-29.0% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2026-01-27,extreme_move,-23.8% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2026-01-30,extreme_move,-24.4% in one day (leverage +2x: may be genuine)
+PALLADIUM LVG,2026-08-28,extreme_move,+20.2% in one day (leverage +2x: may be genuine)
+QUANTUM,2025-05-26,late_start,starts later than the other ETFs
+RARE EARTHS,2021-09-29,late_start,starts later than the other ETFs
+SEMIS,2021-08-06,late_start,starts later than the other ETFs
+SILVER MINERS,2022-05-06,late_start,starts later than the other ETFs
+SPACE,2022-06-24,late_start,starts later than the other ETFs
+URANIUM,2023-02-03,late_start,starts later than the other ETFs
+US TREASURY 20Y,2026-11-11,stale,no price after 2026-11-11

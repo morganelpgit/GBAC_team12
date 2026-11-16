@@ -1,0 +1,1 @@
+[no AI data report] {"n_etfs": 50, "date_range": ["2021-01-04", "2026-11-13"], "issues_by_type": {"late_start": 15, "extreme_move": 14, "stale": 1}, "leverage_factors": {"COPPER LVG": 3, "EURO STOXX 2X": 2, "NASDAQ 3X": 3, "PALLADIUM LVG": 2, "S&P 500 SHORT": -1, "STOXX SHORT": -2}, "currencies": {"EUR": 50}}
