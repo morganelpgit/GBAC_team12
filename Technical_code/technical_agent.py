@@ -367,6 +367,111 @@ def combination_test(prices: pd.DataFrame, horizons=(5, 10), start="2022-01-01")
     return pd.DataFrame(rows)
 
 
+# ---------------------------------------------------------------- evidence: correlations between ETFs, lead-lag, divergence
+MECHANICAL_PAIRS = {frozenset(x) for x in [("NASDAQ", "NASDAQ 3X"), ("EURO STOXX 50", "EURO STOXX 2X"),
+                                           ("EURO STOXX 50", "STOXX SHORT"), ("EURO STOXX 2X", "STOXX SHORT"),
+                                           ("S&P 500", "S&P 500 SHORT")]}   # same index by construction
+
+
+def _returns(prices):
+    adj = panel(prices, "adj_close").ffill(limit=5).drop(columns=list(CASH_LIKE), errors="ignore")
+    return adj, adj.pct_change(fill_method=None)
+
+
+def etf_correlations(prices: pd.DataFrame, years=1, top=15) -> dict:
+    """Daily-return correlation between ETFs over the last `years`: matrix + most positive / negative pairs."""
+    _, r = _returns(prices)
+    r = r[r.index >= r.index.max() - pd.DateOffset(years=years)]
+    C = r.corr(min_periods=120)
+    C.index.name, C.columns.name = "A", "B"
+    pairs = C.where(np.triu(np.ones(C.shape), 1).astype(bool)).stack().rename("correlation").reset_index()
+    pairs["mechanical"] = [frozenset((a, b)) in MECHANICAL_PAIRS or a in UNDERLYING or b in UNDERLYING
+                           for a, b in zip(pairs["A"], pairs["B"])]
+    pairs["correlation"] = pairs["correlation"].round(2)
+    return {"matrix": C.round(2), "most_positive": pairs.nlargest(top, "correlation"),
+            "most_negative": pairs.nsmallest(top, "correlation"),
+            "share_negative_below_-0.3": round(float((pairs["correlation"] < -0.3).mean()), 3),
+            "share_negative_excl_leveraged": round(float((pairs.loc[~pairs["mechanical"], "correlation"] < -0.3).mean()), 3)}
+
+
+def lead_lag_test(prices: pd.DataFrame, split="2025-01-01", start="2022-01-01", top=20) -> pd.DataFrame:
+    """Does ETF A today predict ETF B 1-2 days later? Find the strongest pairs before `split`
+    and check whether the relation still holds after it (out of sample)."""
+    _, r = _returns(prices)
+    ins, oos = r[(r.index >= start) & (r.index < split)], r[r.index >= split]
+
+    def lagged(R, k):
+        S, out = R.shift(-k), []
+        for a in R.columns:
+            for b, v in S.corrwith(R[a]).items():
+                if a != b:
+                    out.append((k, a, b, v))
+        return pd.DataFrame(out, columns=["lag_days", "leader", "follower", "corr_before"])
+
+    res = []
+    for k in (1, 2):
+        i = lagged(ins, k)
+        o = lagged(oos, k).set_index(["leader", "follower"])["corr_before"]
+        t = i.reindex(i["corr_before"].abs().sort_values(ascending=False).index).head(top).copy()
+        t["corr_after"] = [o.get((a, b), np.nan) for a, b in zip(t["leader"], t["follower"])]
+        t["days_of_data_before"] = [int(min(ins[a].notna().sum(), ins[b].notna().sum())) for a, b in zip(t["leader"], t["follower"])]
+        res.append(t)
+    return pd.concat(res).round(3).reset_index(drop=True)
+
+
+def divergence_test(prices: pd.DataFrame, k=5, window=252, min_corr=0.5, step=5, start="2022-01-01") -> pd.DataFrame:
+    """Juliet's idea: two ETFs usually move together (or opposite). A has clearly moved over the last k days,
+    but B has not moved as much as usual ('it should have fallen but didn't'). Does B catch up afterwards?
+    Every `step` days, using only the previous `window` days (no look-ahead):
+    - beta of B on A and the usual noise around that link;
+    - gap_z = (B's k-day return - beta x A's k-day return) / usual noise;
+    - catch-up predicts B's next return has the OPPOSITE sign of gap_z.
+    Returns one row per event (A moved > 1 sd, |correlation| >= min_corr)."""
+    adj, r = _returns(prices)
+    close = panel(prices, "close").ffill(limit=5)
+    pos = {d: i for i, d in enumerate(adj.index)}
+    rows = []
+    for d in [d for d in adj.index[::step] if d >= pd.Timestamp(start)]:
+        i = pos[d]
+        if i + 10 >= len(adj):
+            break
+        win = r.iloc[i - window + 1:i + 1]
+        ok = win.columns[win.notna().sum() >= 200]
+        w = win[ok].fillna(0).values
+        corr, cov = np.corrcoef(w.T), np.cov(w.T)
+        var = np.diag(cov)
+        rk = (adj.iloc[i][ok] / adj.iloc[i - k][ok] - 1).values
+        f5 = (close.iloc[i + 5][ok] / close.iloc[i][ok] - 1).values
+        f10 = (close.iloc[i + 10][ok] / close.iloc[i][ok] - 1).values
+        for a in range(len(ok)):
+            za = rk[a] / np.sqrt(var[a] * k)
+            if abs(za) < 1:
+                continue
+            for b in range(len(ok)):
+                if a == b or abs(corr[a, b]) < min_corr:
+                    continue
+                beta = cov[a, b] / var[a]
+                noise = np.sqrt(max(var[b] - beta ** 2 * var[a], 1e-12) * k)
+                mech = frozenset((ok[a], ok[b])) in MECHANICAL_PAIRS
+                rows.append((d, ok[a], ok[b], corr[a, b], za, (rk[b] - beta * rk[a]) / noise, f5[b], f10[b], mech))
+    E = pd.DataFrame(rows, columns=["date", "A", "B", "corr", "A_move_z", "gap_z", "B_next_5d", "B_next_10d", "mechanical"]).dropna()
+    E["pair_type"] = np.where(E["mechanical"], "same index (leveraged/inverse twin)",
+                              np.where(E["corr"] < 0, "negative pair", "positive pair"))
+    return E
+
+
+def divergence_summary(E: pd.DataFrame, min_gap=1.5) -> pd.DataFrame:
+    """Hit rate of the catch-up bet (B moves opposite to its gap) vs the base rate."""
+    out = []
+    for (t, h), g in [((t, h), g) for t, g in E.groupby("pair_type") for h in ("B_next_5d", "B_next_10d")]:
+        big = g[g["gap_z"].abs() >= min_gap]
+        right = np.sign(-big["gap_z"]) == np.sign(big[h])
+        out.append({"pair_type": t, "horizon": h, "events": len(big), "catch_up_hit_rate": round(right.mean(), 3),
+                    "base_rate_B_down": round((g[h] < 0).mean(), 3),
+                    "IC_gap": round(-g["gap_z"].rank().corr(g[h].rank()), 3)})
+    return pd.DataFrame(out)
+
+
 # ---------------------------------------------------------------- evidence: replay the competition on past data
 TRADING_OFFSETS = (0, 3, 5, 8, 10)     # Mon 7, Thu 10, Mon 14, Thu 17, Mon 21 Dec = trading days 0,3,5,8,10
 FINAL_OFFSET = 12                      # final valuation Wed 23 Dec

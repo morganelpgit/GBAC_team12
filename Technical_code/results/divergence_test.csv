@@ -1,0 +1,7 @@
+pair_type,horizon,events,catch_up_hit_rate,base_rate_B_down,IC_gap
+negative pair,B_next_5d,878,0.494,0.507,0.012
+negative pair,B_next_10d,878,0.494,0.511,0.023
+positive pair,B_next_5d,5787,0.487,0.42,-0.015
+positive pair,B_next_10d,5787,0.501,0.409,-0.01
+same index (leveraged/inverse twin),B_next_5d,214,0.486,0.446,0.068
+same index (leveraged/inverse twin),B_next_10d,214,0.514,0.434,0.094

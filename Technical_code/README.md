@@ -4,7 +4,7 @@
 
 - **`technical_agent.py`**: the agent (pure Python, **no AI call**: same rule as the team graph, *the AI never computes a number*, and it keeps working when Gemini is over its free quota). Main function: `run_technical_agent(prices)`.
 - **`technical_agent.ipynb`**: today's signals, the evidence behind them, and how to plug the agent into `team_graph.ipynb`.
-- **`results/`**: `ic_table.csv` (which indicators predict returns), `indicator_correlation.csv` and `indicator_ic_correlation.csv` (how indicators relate to each other), `combination_test.csv` (does adding a second indicator help?), `competition_replay.csv` (the competition replayed 243 times on history).
+- **`results/`**: `ic_table.csv` (which indicators predict returns), `indicator_correlation.csv` and `indicator_ic_correlation.csv` (how indicators relate to each other), `combination_test.csv` (does adding a second indicator help?), `etf_correlation_1y.csv`, `lead_lag_test.csv` and `divergence_test.csv` (correlations between ETFs, delays, divergence strategy), `competition_replay.csv` (the competition replayed 243 times on history).
 
 ## What it outputs
 `run_technical_agent(prices)` returns a dict:
@@ -38,6 +38,12 @@ Plus `technical_conflicts(...)`: the same check as the macro one: buying an ETF 
 - Negative correlation: volatile ETFs tend to be far below their 52-week high (−0.58).
 - Combining 12-1 momentum with a second indicator does **not** beat 12-1 alone (MACD clearly hurts). More indicators ≠ better: one long-term momentum signal drives the view, MA50 is only a filter, RSI / breakout are timing notes.
 
+**Correlations between ETFs, delays and the divergence strategy** (notebook section 6):
+- Many ETFs are almost the same bet (WORLD–S&P 500 0.97, gold miners–silver miners 0.96, energy–oil & gas 0.93): useful for the Risk agent.
+- Real opposite moves are rare: strongly negative pairs all involve the inverse ETFs; between normal ETFs only 1.8% of pairs are below −0.3.
+- **Lead-lag:** the strongest "A today → B 1–2 days later" pairs found in 2022–2024 almost vanish in 2025–2026 (|corr| 0.26 → 0.05); most were artefacts of an ETF with only 39 days of data.
+- **Divergence / catch-up strategy** (A moved, B did not move as usual → bet that B catches up): right **≈ 50% of the time** for every pair type (38,192 events since 2022). Juliet's exact case (A up, B "should have fallen" but did not): B fell 50.2% of the time vs 50.7% without the signal. Linked ETFs adjust on the same day, so there is no exploitable delay at our 5–10-day horizon. Not used in the agent.
+
 **Competition replay** (243 windows, real rules: 5 trading days, max 5 orders, T-1 close, no dividends): the pure-technical strategy earns **+0.6% more than WORLD on average per window**, but beats it only **~49% of the time** (gains concentrated in strong trends, e.g. 2025; it lost in 2023). Conclusion: momentum is a useful input, not an autopilot: it works best combined with the macro view, the risk rules and human judgement.
 
 ## How to run
@@ -45,4 +51,4 @@ Plus `technical_conflicts(...)`: the same check as the macro one: buying an ETF 
 2. In the repo: open the notebook from the project folder; `data/prices.csv` is found automatically.
 
 ## Plugging it into `team_graph.ipynb`
-See section 7 of the notebook: one `technical_node` after `macro`, pass `state["technical"]["summary"]` as `technical_signals` to `ask_portfolio_manager`, and add `technical_conflicts(...)` to `validate_node`.
+See section 8 of the notebook: one `technical_node` after `macro`, pass `state["technical"]["summary"]` as `technical_signals` to `ask_portfolio_manager`, and add `technical_conflicts(...)` to `validate_node`.
