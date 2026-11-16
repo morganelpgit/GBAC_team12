@@ -296,6 +296,77 @@ def ic_table(prices: pd.DataFrame, horizons=(5, 10), start="2022-01-01") -> pd.D
     return pd.DataFrame(rows).sort_values(["horizon_days", "t_stat"], ascending=[True, False])
 
 
+# ---------------------------------------------------------------- evidence: how are the indicators related?
+EXCLUDED_FROM_TESTS = CASH_LIKE | set(UNDERLYING)
+
+
+def extended_panels(prices: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """The agent's indicators + a few classic ones, only for the correlation study."""
+    P = indicator_panels(prices)
+    P.pop("volume_ratio")
+    adj = panel(prices, "adj_close").ffill(limit=5)
+    P["tech_score"] = momentum_score(P)
+    P["mom_1m"] = adj / adj.shift(21) - 1
+    P["mom_3m"] = adj / adj.shift(63) - 1
+    macd = adj.ewm(span=12, adjust=False).mean() - adj.ewm(span=26, adjust=False).mean()
+    P["macd_hist"] = (macd - macd.ewm(span=9, adjust=False).mean()) / adj       # scaled by price: comparable across ETFs
+    P["dist_52w_high"] = adj / adj.rolling(252, min_periods=126).max() - 1
+    P["vol_60d"] = adj.pct_change(fill_method=None).rolling(60).std()
+    order = ["tech_score", "mom_12_1", "mom_6m", "mom_3m", "mom_1m", "vs_ma50", "macd_hist",
+             "breakout_20d", "rsi14", "dist_52w_high", "vol_60d"]
+    return {k: P[k] for k in order}
+
+
+def indicator_correlations(prices: pd.DataFrame, step=5, horizon=10, start="2022-01-01") -> dict:
+    """Two correlation tables between indicators (cash and leveraged twins excluded):
+    - 'values': do two indicators rank our ETFs the same way? (average rank correlation across dates)
+      high = they carry the same information (counting both = counting it twice);
+    - 'ic': when one indicator predicts well, does the other too? (correlation of their IC series)
+      low or negative = they work at different times and can complement each other."""
+    P = extended_panels(prices)
+    close = panel(prices, "close").ffill(limit=5)
+    fwd = close.shift(-horizon) / close - 1
+    drop = lambda s: s.drop(labels=[c for c in EXCLUDED_FROM_TESTS if c in s.index])
+    dates = [d for d in close.index[::step] if d >= pd.Timestamp(start)]
+    mats, ics = [], {k: {} for k in P}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for d in dates:
+            df = pd.DataFrame({k: drop(v.loc[d]) for k, v in P.items() if d in v.index}).dropna(thresh=8)
+            mats.append(df.drop(columns="breakout_20d").rank().corr())      # breakout is 0/1: not meaningful here
+            for k, v in P.items():
+                ics[k][d] = drop(v.loc[d]).rank().corr(drop(fwd.loc[d]).rank()) if d in v.index else np.nan
+    ic = pd.DataFrame(ics)
+    return {"values": (sum(mats) / len(mats)).round(2), "ic": ic.corr().round(2),
+            "ic_summary": pd.DataFrame({"mean_IC": ic.mean().round(3),
+                                        "t_stat": (ic.mean() / ic.std() * np.sqrt(ic.count())).round(2)})}
+
+
+def combination_test(prices: pd.DataFrame, horizons=(5, 10), start="2022-01-01") -> pd.DataFrame:
+    """Does adding a second indicator to 12-1 momentum improve the prediction? (equal-weight rank average)"""
+    P = extended_panels(prices)
+    close = panel(prices, "close").ffill(limit=5)
+    rk = lambda x: x.drop(columns=[c for c in EXCLUDED_FROM_TESTS if c in x.columns]).rank(axis=1, pct=True)
+    base = rk(P["mom_12_1"])
+    combos = {"12-1 momentum only": base, "tech_score (12-1 + 6m, used by the agent)": rk(P["tech_score"])}
+    for k in ["vs_ma50", "rsi14", "mom_1m", "macd_hist", "vol_60d"]:
+        combos[f"12-1 + {k}"] = (base + rk(P[k])) / 2
+    rows = []
+    for h in horizons:
+        fwd = close.shift(-h) / close - 1
+        dates = [d for d in close.index[::h] if d >= pd.Timestamp(start)]
+        for name, s in combos.items():
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ics = pd.Series({d: s.loc[d].corr(fwd.loc[d].drop(labels=[c for c in EXCLUDED_FROM_TESTS if c in fwd.columns]).rank())
+                                 for d in dates if d in s.index}).dropna()
+            yr = ics.groupby(ics.index.year).mean()
+            rows.append({"signal": name, "horizon_days": h, "mean_IC": round(ics.mean(), 3),
+                         "t_stat": round(ics.mean() / ics.std() * np.sqrt(len(ics)), 2),
+                         "positive_years": f"{int((yr > 0).sum())}/{len(yr)}"})
+    return pd.DataFrame(rows)
+
+
 # ---------------------------------------------------------------- evidence: replay the competition on past data
 TRADING_OFFSETS = (0, 3, 5, 8, 10)     # Mon 7, Thu 10, Mon 14, Thu 17, Mon 21 Dec = trading days 0,3,5,8,10
 FINAL_OFFSET = 12                      # final valuation Wed 23 Dec

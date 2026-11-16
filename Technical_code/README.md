@@ -4,7 +4,7 @@
 
 - **`technical_agent.py`**: the agent (pure Python, **no AI call**: same rule as the team graph, *the AI never computes a number*, and it keeps working when Gemini is over its free quota). Main function: `run_technical_agent(prices)`.
 - **`technical_agent.ipynb`**: today's signals, the evidence behind them, and how to plug the agent into `team_graph.ipynb`.
-- **`results/`**: `ic_table.csv` (which indicators predict returns) and `competition_replay.csv` (the competition replayed 243 times on history).
+- **`results/`**: `ic_table.csv` (which indicators predict returns), `indicator_correlation.csv` and `indicator_ic_correlation.csv` (how indicators relate to each other), `combination_test.csv` (does adding a second indicator help?), `competition_replay.csv` (the competition replayed 243 times on history).
 
 ## What it outputs
 `run_technical_agent(prices)` returns a dict:
@@ -32,6 +32,12 @@ Plus `technical_conflicts(...)`: the same check as the macro one: buying an ETF 
 | RSI | 0.021 (1.3) | 0.029 (1.5) | 3–4/5 |
 | Low volatility | −0.027 (−1.1) | −0.036 (−1.2) | 2–3/5 |
 
+**Correlations between indicators** (notebook section 5):
+- Short-term trend indicators carry almost the **same information**: 1-month momentum, price vs MA50 and RSI correlate 0.76–0.84 (MACD ≈ 0.5). Using two of them counts the same thing twice.
+- Long-term (12-1) momentum is a **different** signal: ≈ 0 correlation with the short-term group (0.07 with 1-month momentum, −0.10 with MACD).
+- Negative correlation: volatile ETFs tend to be far below their 52-week high (−0.58).
+- Combining 12-1 momentum with a second indicator does **not** beat 12-1 alone (MACD clearly hurts). More indicators ≠ better: one long-term momentum signal drives the view, MA50 is only a filter, RSI / breakout are timing notes.
+
 **Competition replay** (243 windows, real rules: 5 trading days, max 5 orders, T-1 close, no dividends): the pure-technical strategy earns **+0.6% more than WORLD on average per window**, but beats it only **~49% of the time** (gains concentrated in strong trends, e.g. 2025; it lost in 2023). Conclusion: momentum is a useful input, not an autopilot: it works best combined with the macro view, the risk rules and human judgement.
 
 ## How to run
@@ -39,4 +45,4 @@ Plus `technical_conflicts(...)`: the same check as the macro one: buying an ETF 
 2. In the repo: open the notebook from the project folder; `data/prices.csv` is found automatically.
 
 ## Plugging it into `team_graph.ipynb`
-See section 6 of the notebook: one `technical_node` after `macro`, pass `state["technical"]["summary"]` as `technical_signals` to `ask_portfolio_manager`, and add `technical_conflicts(...)` to `validate_node`.
+See section 7 of the notebook: one `technical_node` after `macro`, pass `state["technical"]["summary"]` as `technical_signals` to `ask_portfolio_manager`, and add `technical_conflicts(...)` to `validate_node`.
