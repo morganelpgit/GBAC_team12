@@ -1,16 +1,16 @@
 # Portfolio Manager (Francesco)
 
-- **portfolio_orders.ipynb**: first version of `weights_to_orders`, which turns the Portfolio Manager's target weights into max 5 orders following the competition rules (sells first, biggest moves first, every buy funded), with tests on our price data.
+**team_graph.ipynb** is the integrated notebook the team uses on each trading day. It runs the whole process as a LangGraph graph:
 
-- **portfolio_manager_graph.ipynb**: connects the Portfolio Manager to Gonçalo's Macro/News and Risk code in one LangGraph flow:
-  `macro → portfolio_manager → orders → risk`
-  - Orders use Gonçalo's format (`code`, `action`, `amount_eur`).
-  - Risk rules follow our balanced profile: max 20% per ETF (except OVERNIGHT CASH), max 10% in leveraged/inverse ETFs, max 40% per theme, min 20% in defensive assets, €500 minimum order.
-  - The API key is read from Colab Secrets or from a `.env` file.
-  - The Portfolio Manager is still a **placeholder** with fixed weights: next step is the AI version that uses the macro summary.
+`data → macro → technical → portfolio_manager → validate → human_approval → orders → risk → log`
 
-## How to run
-1. Open the notebook in Colab (or Jupyter).
-2. Upload `prices.csv` (or run it from the repo, where `data/prices.csv` is found automatically).
-3. Add your Gemini key as `LLM_API_KEY` in Colab Secrets (or in `.env`).
-4. Run all cells.
+- Data (Morgane) and Macro/News + risk rules (Gonçalo) are included in the notebook; the Technical agent (Juliet) is imported from `Technical_code/technical_agent.py`.
+- Python computes every number; the AI (Gemini) only writes the macro view and proposes the portfolio; the team approves, edits or rejects before any order.
+- The Gemini key is read from Colab Secrets (`LLM_API_KEY`) or from a `.env` file: it is never written in the code.
+
+## How to run (Google Colab)
+1. Upload `data/prices.csv`, `data/tickers.csv` and `Technical_code/technical_agent.py`. On a real trading day, also upload `portfolio.csv` and `trade_log.csv` from the previous day.
+2. Run the cells one at a time, from top to bottom (not "Run all").
+3. Section 11 tests the whole flow with a simulated AI, without using the Gemini quota.
+4. Section 12 runs the real graph and stops for the team's decision; section 13 records it (name and reason required).
+5. Download the logs (section 14) at the end of the session.
