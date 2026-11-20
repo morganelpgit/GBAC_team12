@@ -46,6 +46,17 @@ Plus `technical_conflicts(...)`: the same check as the macro one: buying an ETF 
 
 **Competition replay** (243 windows, real rules: 5 trading days, max 5 orders, T-1 close, no dividends): the pure-technical strategy earns **+0.6% more than WORLD on average per window**, but beats it only **~49% of the time** (gains concentrated in strong trends, e.g. 2025; it lost in 2023). Conclusion: momentum is a useful input, not an autopilot: it works best combined with the macro view, the risk rules and human judgement.
 
+**Rules-only benchmarks, with drawdown** (notebook section 7b, 243 windows, same competition rules):
+
+| Strategy | Avg return per window | Beats WORLD | Worst window | Avg max drawdown | Return per unit of drawdown |
+|---|---|---|---|---|---|
+| WORLD | +0.61% | – | −12.9% | −2.4% | 0.25 |
+| AI dry-run portfolio, held fixed (defensive) | +0.23% | 40% | −4.5% | −1.3% | 0.17 |
+| Momentum top 5 | +1.23% | 50% | −11.4% | −4.2% | 0.29 |
+| Momentum + team risk rules | +0.82% | 47% | −7.6% | −3.3% | 0.25 |
+
+The defensive portfolio our AI tends to choose has the smallest drawdowns but also the lowest return, and less return per unit of drawdown than WORLD. The AI itself is **not** backtested (look-ahead bias: Gemini knows these years; no historical headlines; free quota): it is compared forward, with a shadow rules-only portfolio.
+
 ## How to run
 1. Colab: upload `prices.csv` (from `data/`) and `technical_agent.py`, open `technical_agent.ipynb`, run all cells (no API key needed).
 2. In the repo: open the notebook from the project folder; `data/prices.csv` is found automatically.

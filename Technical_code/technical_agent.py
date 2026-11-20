@@ -527,6 +527,105 @@ def simulate_competitions(prices: pd.DataFrame, top_n=5, max_swaps=2, step=5, st
     return out
 
 
+# ---------------------------------------------------------------- rules-only benchmarks (for comparison with the AI)
+DEFENSIVE_ETFS = ["OVERNIGHT CASH", "EUR GOVT BOND", "GLOBAL AGG BOND"]       # team definition (team_graph)
+THEME_GROUPS = {"Frontier tech": "Equity / Tech"}
+AI_DRY_RUN_16NOV = {"OVERNIGHT CASH": 0.25, "WORLD MIN VOL": 0.20, "HEALTH CARE": 0.20,
+                    "STAPLES": 0.20, "EUR GOVT BOND": 0.15}                  # Francesco's dry run, after the team edit
+
+
+def _momentum_picks(d, score, ma, unlevered, n, one_per_theme, theme_of):
+    ok = score.loc[d, unlevered].dropna()
+    ok = ok[ma.loc[d, ok.index] > 0].sort_values(ascending=False)
+    picks, themes = [], set()
+    for c in ok.index:
+        t = THEME_GROUPS.get(theme_of[c], theme_of[c])
+        if one_per_theme and t in themes:
+            continue
+        picks.append(c); themes.add(t)
+        if len(picks) == n:
+            break
+    return picks
+
+
+def replay_strategies(prices: pd.DataFrame, step=5, start="2022-02-01", capital=10_000.0,
+                      min_order=500.0, max_swaps=2) -> pd.DataFrame:
+    """Replays the competition (5 trading days, max 5 orders/day, T-1 close, close-price valuation,
+    no dividends) for several RULES-ONLY strategies, and records each window's return AND its
+    maximum drawdown (worst fall from a peak during the window, daily closes).
+      WORLD                - 100% WORLD (benchmark)
+      AI dry-run, fixed    - the portfolio of the 16 Nov dry run, bought on day 0 and held
+      Momentum top 5       - 5 x 20% best tech_score above MA50, max 2 swaps per later trading day
+      Momentum + risk rules- 25% OVERNIGHT CASH + 4 x 18.75% momentum picks, max 1 per theme
+                             (team rules: <=20% per ETF, >=25% defensive at planning, <=35% per theme, no leverage)"""
+    panels = indicator_panels(prices)
+    score, ma = momentum_score(panels), panels["vs_ma50"]
+    info = prices.drop_duplicates("code", keep="last").set_index("code")
+    theme_of, lev = info["theme"].to_dict(), info["leverage"].to_dict()
+    unlevered = [c for c in score.columns if lev.get(c, 1) == 1]
+    close = panel(prices, "close").ffill(limit=5)
+    dates = close.index
+    first = dates.searchsorted(pd.Timestamp(start))
+
+    def targets(name, d, k):
+        if name == "WORLD":
+            return {"WORLD": 1.0} if k == 0 else None
+        if name == "AI dry-run, fixed":
+            return AI_DRY_RUN_16NOV if k == 0 else None
+        if name == "Momentum top 5":
+            return {c: 0.20 for c in _momentum_picks(d, score, ma, unlevered, 5, False, theme_of)}
+        picks = _momentum_picks(d, score, ma, [c for c in unlevered if c not in DEFENSIVE_ETFS], 4, True, theme_of)
+        return {"OVERNIGHT CASH": 0.25, **{c: 0.1875 for c in picks}}
+
+    names = ["WORLD", "AI dry-run, fixed", "Momentum top 5", "Momentum + risk rules"]
+    rows = []
+    for i in range(first + 1, len(dates) - FINAL_OFFSET, step):
+        for name in names:
+            cash, units, path = capital, {}, []
+            for k, off in enumerate(TRADING_OFFSETS):
+                d = dates[i + off - 1]
+                px = close.loc[d]
+                tgt = targets(name, d, k)
+                if tgt is not None:
+                    tgt = {c: w for c, w in tgt.items() if pd.notna(px.get(c))}
+                    value = cash + sum(u * px[c] for c, u in units.items())
+                    sells = [c for c in units if c not in tgt]
+                    sells = sells if k == 0 else sells[:max_swaps]
+                    for c in sells:
+                        cash += units.pop(c) * px[c]
+                    buys = [c for c in tgt if c not in units][:max(0, 5 - len(sells))]
+                    for c in buys:
+                        amount = min(tgt[c] * value, cash)
+                        if amount >= min_order:
+                            units[c] = amount / px[c]; cash -= amount
+                # value every day until the next trading day (or the end)
+                nxt = TRADING_OFFSETS[k + 1] if k + 1 < len(TRADING_OFFSETS) else FINAL_OFFSET + 1
+                for j in range(off, nxt):
+                    dj = dates[i + j - 1] if j > 0 else dates[i - 1]
+                    path.append(cash + sum(u * close.loc[dj, c] for c, u in units.items() if pd.notna(close.loc[dj, c])))
+            end = dates[i + FINAL_OFFSET]
+            final = cash + sum(u * close.loc[end, c] for c, u in units.items())
+            path.append(final)
+            p = pd.Series([capital] + path)
+            rows.append({"start": dates[i].date(), "strategy": name, "return_%": (final / capital - 1) * 100,
+                         "max_drawdown_%": float((p / p.cummax() - 1).min() * 100)})
+    out = pd.DataFrame(rows)
+    world = out[out["strategy"] == "WORLD"].set_index("start")["return_%"]
+    out["excess_vs_WORLD_%"] = out["return_%"] - out["start"].map(world)
+    return out
+
+
+def replay_summary(rep: pd.DataFrame) -> pd.DataFrame:
+    g = rep.groupby("strategy", sort=False)
+    return pd.DataFrame({
+        "avg_return_%": g["return_%"].mean(), "median_return_%": g["return_%"].median(),
+        "beats_WORLD_%_of_windows": g["excess_vs_WORLD_%"].apply(lambda x: (x > 0).mean() * 100),
+        "worst_window_%": g["return_%"].min(), "best_window_%": g["return_%"].max(),
+        "avg_max_drawdown_%": g["max_drawdown_%"].mean(), "worst_max_drawdown_%": g["max_drawdown_%"].min(),
+        "return_per_unit_drawdown": g["return_%"].mean() / -g["max_drawdown_%"].mean(),
+    }).round(2)
+
+
 def simulation_summary(sim: pd.DataFrame) -> dict:
     f = lambda x, n=2: round(float(x), n)
     return {"windows": len(sim), "beat_WORLD_%": f((sim["excess_%"] > 0).mean() * 100, 1),
